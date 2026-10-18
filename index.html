@@ -3,552 +3,612 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Luyện Đọc Nốt Nhạc - Chuyên Nghiệp</title>
-    <!-- Tailwind CSS -->
+    <title>Đọc Nốt Nhạc Pro - Chế độ Nhạc cụ 3D</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- VexFlow -->
-    <script src="https://cdn.jsdelivr.net/npm/vexflow@3.0.9/releases/vexflow-min.js"></script>
-    <!-- Canvas Confetti -->
+    
+    <!-- Cập nhật VexFlow bản 4.2.5 -->
+    <script src="https://unpkg.com/vexflow@4.2.5/build/cjs/vexflow.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <!-- Tone.js cho âm thanh -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        
-        /* Hiệu ứng rung lắc khi sai */
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-8px); }
-            40%, 80% { transform: translateX(8px); }
-        }
-        .shake {
-            animation: shake 0.4s ease-in-out;
-        }
-
-        /* Nút tùy chỉnh */
-        .btn-press { transition: all 0.1s ease; }
-        .btn-press:active { transform: scale(0.96); }
-
-        /* VexFlow Container */
-        #staff-container svg {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 0 auto;
-        }
-
-        /* Custom Radio/Segmented Control styles */
-        .segmented-control input:checked + label {
-            background-color: #2563eb; /* blue-600 */
-            color: white;
-            border-color: #2563eb;
-        }
-    </style>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Liên kết file CSS riêng -->
+    <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50 min-h-screen flex flex-col text-slate-800 selection:bg-blue-200">
-
-    <!-- Header & Điểm số -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
-            <h1 class="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                </svg>
-                Sight Reading Pro
-            </h1>
-            <div class="flex gap-6 text-sm font-medium">
-                <div class="flex flex-col items-center">
-                    <span class="text-slate-500 text-xs uppercase tracking-wider">Đúng</span>
-                    <span id="score-correct" class="text-lg text-emerald-600 font-bold">0</span>
+<body class="text-gray-800 pb-10">
+    <div class="max-w-4xl mx-auto px-4 py-6">
+        <!-- Header & Điểm số -->
+        <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-music text-blue-500 mr-2"></i>Thị Tấu Pro</h1>
+                <p class="text-sm text-gray-500">Luyện đọc khuông nhạc & mô phỏng nhạc cụ</p>
+                <div id="midi-status" class="mt-2 text-xs font-bold px-2 py-1 rounded border text-gray-500 bg-gray-50 inline-block">⏳ Đang tìm thiết bị MIDI...</div>
+            </div>
+            
+            <div class="flex gap-4">
+                <div class="text-center bg-green-50 px-4 py-2 rounded-lg border border-green-200">
+                    <div class="text-xs text-green-600 font-bold uppercase">Đúng</div>
+                    <div id="score-correct" class="text-2xl font-bold text-green-700">0</div>
                 </div>
-                <div class="flex flex-col items-center">
-                    <span class="text-slate-500 text-xs uppercase tracking-wider">Sai</span>
-                    <span id="score-wrong" class="text-lg text-rose-600 font-bold">0</span>
+                <div class="text-center bg-red-50 px-4 py-2 rounded-lg border border-red-200">
+                    <div class="text-xs text-red-600 font-bold uppercase">Sai</div>
+                    <div id="score-wrong" class="text-2xl font-bold text-red-700">0</div>
                 </div>
             </div>
         </div>
-    </header>
 
-    <main class="flex-grow w-full max-w-4xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <!-- Bảng Điều khiển -->
+        <div class="bg-white p-5 rounded-xl shadow-sm mb-6 space-y-4">
+            <!-- Mức độ -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Mức độ</label>
+                <div class="flex flex-wrap gap-2" id="group-level">
+                    <button class="btn-option active border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium" data-val="easy">Dễ (Sol, Không dấu hóa)</button>
+                    <button class="btn-option border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium" data-val="medium">Trung bình (Có nốt phụ)</button>
+                    <button class="btn-option border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium" data-val="hard">Nâng cao (Có dấu hóa)</button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Khóa nhạc -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Khóa nhạc</label>
+                    <div class="flex flex-wrap gap-2" id="group-clef">
+                        <button class="btn-option active border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium" data-val="treble">Khóa Sol</button>
+                        <button class="btn-option border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium" data-val="bass">Khóa Fa</button>
+                        <button class="btn-option border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium" data-val="mixed">Trộn lẫn</button>
+                    </div>
+                </div>
+                <!-- Chế độ nhập -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Giao diện trả lời</label>
+                    <div class="flex flex-wrap gap-2" id="group-input">
+                        <button class="btn-option border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium" data-val="buttons">Nút chữ (C, D, E)</button>
+                        <button class="btn-option active border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium" data-val="piano">Phím Piano</button>
+                        <button class="btn-option border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium" data-val="guitar">Cần đàn Guitar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Khu vực hiển thị Khuông nhạc -->
+        <div id="play-area" class="relative">
+            <div id="staff-container" class="mb-6"></div>
+            
+            <div id="feedback-msg" class="absolute top-2 left-1/2 transform -translate-x-1/2 text-lg font-bold px-4 py-1 rounded-full opacity-0 transition-opacity"></div>
+        </div>
         
-        <!-- Bảng Cài đặt -->
-        <aside class="w-full bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-6 lg:col-span-1">
-            
-            <!-- Chọn Khóa Nhạc -->
-            <div>
-                <h2 class="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wider">1. Khóa Nhạc</h2>
-                <div class="flex flex-col gap-2 segmented-control">
-                    <div class="relative">
-                        <input type="radio" name="clef" id="clef-treble" value="treble" class="sr-only" checked onchange="updateSettings()">
-                        <label for="clef-treble" class="block w-full text-center px-4 py-2 border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors text-sm font-medium">Khóa Sol (Treble)</label>
-                    </div>
-                    <div class="relative">
-                        <input type="radio" name="clef" id="clef-bass" value="bass" class="sr-only" onchange="updateSettings()">
-                        <label for="clef-bass" class="block w-full text-center px-4 py-2 border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors text-sm font-medium">Khóa Fa (Bass)</label>
-                    </div>
-                    <div class="relative">
-                        <input type="radio" name="clef" id="clef-mixed" value="mixed" class="sr-only" onchange="updateSettings()">
-                        <label for="clef-mixed" class="block w-full text-center px-4 py-2 border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors text-sm font-medium">Trộn lẫn (Mixed)</label>
-                    </div>
+        <!-- Nút Trợ giảng AI -->
+        <div class="text-center mb-6">
+            <button onclick="explainWithAI()" class="bg-purple-100 text-purple-700 hover:bg-purple-200 px-4 py-2 rounded-lg font-medium text-sm transition border border-purple-200">
+                <i class="fas fa-robot mr-2"></i>Trợ giảng AI: Giải thích nốt này
+            </button>
+            <div id="ai-response" class="mt-3 text-sm text-purple-800 bg-purple-50 p-3 rounded-lg hidden border border-purple-100 max-w-2xl mx-auto text-left"></div>
+        </div>
+
+        <!-- Khu vực tương tác: Nút bấm -->
+        <div id="input-buttons" class="hidden justify-center flex-wrap gap-3 max-w-2xl mx-auto mt-6">
+            <!-- Sinh qua JS -->
+        </div>
+
+        <!-- Khu vực tương tác: Piano -->
+        <div id="input-piano" class="hidden mt-4">
+            <p class="text-center text-sm text-gray-500 mb-2"><i>Cuộn ngang để xem thêm phím (Từ C3 đến C6)</i></p>
+            <div class="piano-container">
+                <div class="piano-wrapper" id="piano-wrapper">
+                    <!-- Sinh qua JS -->
                 </div>
             </div>
+        </div>
 
-            <!-- Chọn Mức Độ -->
-            <div>
-                <h2 class="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wider">2. Mức Độ</h2>
-                <div class="flex flex-col gap-2 segmented-control">
-                    <div class="relative">
-                        <input type="radio" name="difficulty" id="diff-easy" value="easy" class="sr-only" checked onchange="updateSettings()">
-                        <label for="diff-easy" class="block w-full text-center px-4 py-2 border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors text-sm font-medium">Dễ (Trong khuông, 0 dấu hóa)</label>
-                    </div>
-                    <div class="relative">
-                        <input type="radio" name="difficulty" id="diff-medium" value="medium" class="sr-only" onchange="updateSettings()">
-                        <label for="diff-medium" class="block w-full text-center px-4 py-2 border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors text-sm font-medium">Trung Bình (Kẻ phụ, dấu hóa bất thường)</label>
-                    </div>
-                    <div class="relative">
-                        <input type="radio" name="difficulty" id="diff-hard" value="hard" class="sr-only" onchange="updateSettings()">
-                        <label for="diff-hard" class="block w-full text-center px-4 py-2 border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors text-sm font-medium">Khó (Nhiều kẻ phụ, Hóa biểu)</label>
-                    </div>
+        <!-- Khu vực tương tác: Guitar -->
+        <div id="input-guitar" class="hidden mt-4">
+            <p class="text-center text-sm text-gray-500"><i>Góc nhìn người ôm đàn nhìn xuống. Dây trên cùng là dây 6 (Bass). Nhấp vào ngăn đàn để trả lời.</i></p>
+            <div class="guitar-scene">
+                <div class="fretboard" id="fretboard">
+                    <!-- Sinh qua JS -->
                 </div>
             </div>
-        </aside>
+        </div>
+    </div>
 
-        <!-- Khu vực Hiển thị & Trả lời -->
-        <section class="w-full flex flex-col gap-6 lg:col-span-2">
-            
-            <!-- Khuông nhạc -->
-            <div class="w-full bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center min-h-[220px] relative">
-                <!-- Vùng thông báo -->
-                <div id="feedback-message" class="absolute top-4 font-bold text-lg opacity-0 transition-opacity duration-300">
-                    Thông báo
-                </div>
-                
-                <div id="staff-container" class="w-full overflow-hidden mt-6">
-                    <!-- VexFlow Renderer -->
-                </div>
-
-                <div class="w-full mt-4 flex flex-col items-center">
-                    <button onclick="explainWithAI()" id="btn-ai" class="text-sm bg-purple-100 hover:bg-purple-200 text-purple-700 py-1.5 px-4 rounded-full font-medium transition-colors flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                        Giáo viên AI giải thích nốt này
-                    </button>
-                    <div id="ai-response-container" class="hidden mt-3 w-full bg-purple-50 border border-purple-100 p-4 rounded-lg text-sm text-purple-800 shadow-inner">
-                        <div id="ai-loading" class="hidden flex items-center gap-2 font-medium">
-                            <svg class="animate-spin h-4 w-4 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            Thầy cô AI đang phân tích nốt nhạc...
-                        </div>
-                        <div id="ai-text" class="leading-relaxed whitespace-pre-wrap"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Vùng Bấm Trả lời -->
-            <div class="w-full bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-5">
-                
-                <!-- Chọn dấu hóa -->
-                <div>
-                    <h3 class="text-center text-sm font-semibold text-slate-600 mb-3">1. Chọn Dấu Hóa (nếu có)</h3>
-                    <div class="flex justify-center gap-3">
-                        <button onclick="setAccidental('b')" id="acc-b" class="btn-press w-24 py-2 rounded-lg border-2 border-slate-200 text-slate-600 font-medium hover:bg-slate-50 flex items-center justify-center gap-1">
-                            <span class="text-xl">♭</span> Giáng
-                        </button>
-                        <button onclick="setAccidental('n')" id="acc-n" class="btn-press w-24 py-2 rounded-lg border-2 border-blue-500 bg-blue-50 text-blue-700 font-bold flex items-center justify-center gap-1 shadow-sm">
-                            <span class="text-xl">♮</span> Bình
-                        </button>
-                        <button onclick="setAccidental('#')" id="acc-sharp" class="btn-press w-24 py-2 rounded-lg border-2 border-slate-200 text-slate-600 font-medium hover:bg-slate-50 flex items-center justify-center gap-1">
-                            <span class="text-xl">♯</span> Thăng
-                        </button>
-                    </div>
-                </div>
-
-                <hr class="border-slate-100">
-
-                <!-- Chọn Tên nốt -->
-                <div>
-                    <h3 class="text-center text-sm font-semibold text-slate-600 mb-3">2. Chọn Tên Nốt Cơ Bản</h3>
-                    <div class="grid grid-cols-4 md:grid-cols-7 gap-2 md:gap-3">
-                        <button onclick="submitAnswer('c')" class="btn-press bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-4 rounded-lg border border-slate-200 text-lg md:text-xl transition-colors">Do (C)</button>
-                        <button onclick="submitAnswer('d')" class="btn-press bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-4 rounded-lg border border-slate-200 text-lg md:text-xl transition-colors">Re (D)</button>
-                        <button onclick="submitAnswer('e')" class="btn-press bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-4 rounded-lg border border-slate-200 text-lg md:text-xl transition-colors">Mi (E)</button>
-                        <button onclick="submitAnswer('f')" class="btn-press bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-4 rounded-lg border border-slate-200 text-lg md:text-xl transition-colors">Fa (F)</button>
-                        <button onclick="submitAnswer('g')" class="btn-press bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-4 rounded-lg border border-slate-200 text-lg md:text-xl transition-colors">Sol (G)</button>
-                        <button onclick="submitAnswer('a')" class="btn-press bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-4 rounded-lg border border-slate-200 text-lg md:text-xl transition-colors">La (A)</button>
-                        <button onclick="submitAnswer('b')" class="btn-press bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-4 rounded-lg border border-slate-200 text-lg md:text-xl col-span-4 md:col-span-1 transition-colors">Si (B)</button>
-                    </div>
-                </div>
-
-            </div>
-        </section>
-    </main>
-
+    <!-- Tích hợp Service Worker để chạy Offline -->
     <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(registration => {
+              console.log('ServiceWorker đăng ký thành công với scope: ', registration.scope);
+            })
+            .catch(err => console.log('SW registration failed: ', err));
+        });
+      }
+    </script>
+
+   <script>
+        // --- CẤU HÌNH BIẾN TOÀN CỤC ---
         const VF = Vex.Flow;
-
-        // --- CẤU HÌNH TONE.JS (Âm thanh Piano) ---
-        let audioInitialized = false;
-        const sampler = new Tone.Sampler({
-            urls: {
-                A0: "A0.mp3",
-                C1: "C1.mp3",
-                "D#1": "Ds1.mp3",
-                "F#1": "Fs1.mp3",
-                A1: "A1.mp3",
-                C2: "C2.mp3",
-                "D#2": "Ds2.mp3",
-                "F#2": "Fs2.mp3",
-                A2: "A2.mp3",
-                C3: "C3.mp3",
-                "D#3": "Ds3.mp3",
-                "F#3": "Fs3.mp3",
-                A3: "A3.mp3",
-                C4: "C4.mp3",
-                "D#4": "Ds4.mp3",
-                "F#4": "Fs4.mp3",
-                A4: "A4.mp3",
-                C5: "C5.mp3",
-                "D#5": "Ds5.mp3",
-                "F#5": "Fs5.mp3",
-                A5: "A5.mp3",
-                C6: "C6.mp3",
-                "D#6": "Ds6.mp3",
-                "F#6": "Fs6.mp3",
-                A6: "A6.mp3",
-                C7: "C7.mp3",
-                "D#7": "Ds7.mp3",
-                "F#7": "Fs7.mp3",
-                A7: "A7.mp3",
-                C8: "C8.mp3"
-            },
-            release: 1,
-            baseUrl: "https://tonejs.github.io/audio/salamander/"
-        }).toDestination();
-
-        // Kích hoạt Audio Context khi người dùng tương tác lần đầu
-        async function initAudio() {
-            if (!audioInitialized) {
-                await Tone.start();
-                audioInitialized = true;
-            }
-        }
-        document.addEventListener('click', initAudio, { once: true });
-
-        // --- CẤU HÌNH DỮ LIỆU ---
-        
-        // Quãng nốt cho từng mức độ
-        const NOTE_POOLS = {
-            treble: {
-                easy: ['e/4','f/4','g/4','a/4','b/4','c/5','d/5','e/5','f/5'],
-                medium: ['c/4','d/4','e/4','f/4','g/4','a/4','b/4','c/5','d/5','e/5','f/5','g/5','a/5','b/5','c/6'],
-                hard: ['g/3','a/3','b/3','c/4','d/4','e/4','f/4','g/4','a/4','b/4','c/5','d/5','e/5','f/5','g/5','a/5','b/5','c/6','d/6','e/6','f/6']
-            },
-            bass: {
-                easy: ['g/2','a/2','b/2','c/3','d/3','e/3','f/3','g/3','a/3'],
-                medium: ['c/2','d/2','e/2','f/2','g/2','a/2','b/2','c/3','d/3','e/3','f/3','g/3','a/3','b/3','c/4','d/4'],
-                hard: ['e/1','f/1','g/1','a/1','b/1','c/2','d/2','e/2','f/2','g/2','a/2','b/2','c/3','d/3','e/3','f/3','g/3','a/3','b/3','c/4','d/4','e/4','f/4']
-            }
-        };
-
-        // Hóa biểu và các nốt bị ảnh hưởng
-        const KEY_SIGNATURES = ['C', 'G', 'D', 'A', 'E', 'F', 'Bb', 'Eb', 'Ab'];
-        const KEY_SIG_ACCIDENTALS = {
-            'C': {},
-            'G': { 'f': '#' },
-            'D': { 'f': '#', 'c': '#' },
-            'A': { 'f': '#', 'c': '#', 'g': '#' },
-            'E': { 'f': '#', 'c': '#', 'g': '#', 'd': '#' },
-            'F': { 'b': 'b' },
-            'Bb': { 'b': 'b', 'e': 'b' },
-            'Eb': { 'b': 'b', 'e': 'b', 'a': 'b' },
-            'Ab': { 'b': 'b', 'e': 'b', 'a': 'b', 'd': 'b' }
-        };
-
-        const NOTE_NAMES_VI = { 'c': 'Do', 'd': 'Re', 'e': 'Mi', 'f': 'Fa', 'g': 'Sol', 'a': 'La', 'b': 'Si' };
-        const ACC_NAMES_VI = { '#': 'Thăng', 'b': 'Giáng', 'n': '' };
-
-        // --- STATE ---
-        let settings = { clef: 'treble', difficulty: 'easy' };
-        let currentInputAcc = 'n'; // Lưu trạng thái người dùng chọn (b, n, #)
-        let questionData = null;
+        let currentNote = null;
         let score = { correct: 0, wrong: 0 };
-        let isProcessing = false;
+        let pianoSampler = null;
+        let guitarSampler = null;
+        let audioStarted = false;
+        
+        let config = {
+            level: 'easy',     
+            clef: 'treble',    
+            inputType: 'piano' 
+        };
 
-        // Cập nhật Cài đặt
-        function updateSettings() {
-            settings.clef = document.querySelector('input[name="clef"]:checked').value;
-            settings.difficulty = document.querySelector('input[name="difficulty"]:checked').value;
-            generateQuestion();
-        }
+        const noteNames = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+        const accidentals = ['b', '', '#'];
 
-        // Cập nhật UI nút chọn Dấu hóa
-        function setAccidental(acc) {
-            currentInputAcc = acc;
+     // --- KHỞI TẠO ÂM THANH (TONE.JS) ---
+
+        function initAudio() {
+            // 1. Khởi tạo tiếng Piano (Salamander Grand Piano)
+            if (!pianoSampler) {
+                pianoSampler = new Tone.Sampler({
+                    urls: { "C4": "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3", "A4": "A4.mp3" },
+                    baseUrl: "https://tonejs.github.io/audio/salamander/",
+                    release: 0.18,
+                }).toDestination();
+            }
             
-            const btnB = document.getElementById('acc-b');
-            const btnN = document.getElementById('acc-n');
-            const btnSharp = document.getElementById('acc-sharp');
+            // 2. Khởi tạo tiếng Guitar thật (Acoustic Nylon Guitar)
+            if (!guitarSampler) {
+                // Tạo một chút vang (Reverb) để tiếng đàn mộc mạc như phát ra từ thùng guitar thật
+                const guitarReverb = new Tone.Freeverb({
+                    roomSize: 0.6,
+                    dampening: 2500
+                }).toDestination();
 
-            // Reset class
-            const defaultClass = "btn-press w-24 py-2 rounded-lg border-2 border-slate-200 text-slate-600 font-medium hover:bg-slate-50 flex items-center justify-center gap-1";
-            const activeClass = "btn-press w-24 py-2 rounded-lg border-2 border-blue-500 bg-blue-50 text-blue-700 font-bold flex items-center justify-center gap-1 shadow-sm";
-
-            btnB.className = acc === 'b' ? activeClass : defaultClass;
-            btnN.className = acc === 'n' ? activeClass : defaultClass;
-            btnSharp.className = acc === '#' ? activeClass : defaultClass;
+                // Load các file MP3 tiếng guitar thật từ thư viện MIDI Soundfont
+                guitarSampler = new Tone.Sampler({
+                    urls: {
+                        "A2": "A2.mp3",
+                        "C3": "C3.mp3",
+                        "E3": "E3.mp3",
+                        "A3": "A3.mp3",
+                        "C4": "C4.mp3",
+                        "E4": "E4.mp3",
+                        "A4": "A4.mp3",
+                        "C5": "C5.mp3"
+                    },
+                    baseUrl: "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_guitar_nylon-mp3/",
+                }).connect(guitarReverb); // Nối qua cục Reverb rồi mới ra loa
+                
+                guitarSampler.volume.value = 5; // Tăng âm lượng vì sample guitar gốc hơi nhỏ
+            }
+            
+            if (Tone.context.state !== 'running') Tone.context.resume();
+            audioStarted = true;
         }
 
-        function getRandomItem(arr) {
-            return arr[Math.floor(Math.random() * arr.length)];
+        document.body.addEventListener('click', () => {
+            if (!audioStarted) initAudio();
+        }, { once: true });
+
+        function playNoteSound(midiNumber) {
+            if (!audioStarted) return;
+            const freq = Tone.Frequency(midiNumber, "midi").toNote();
+            
+            // Phân loại phát âm thanh dựa trên giao diện đang chọn
+            if (config.inputType === 'guitar') {
+                if (guitarSampler && guitarSampler.loaded) {
+                    // Để dây ngân vang dài tự nhiên (2n)
+                    guitarSampler.triggerAttackRelease(freq, "2n");
+                }
+            } else {
+                if (pianoSampler && pianoSampler.loaded) {
+                    pianoSampler.triggerAttackRelease(freq, "4n");
+                }
+            }
         }
 
-        // Tạo câu hỏi mới
-        function generateQuestion() {
-            // Xác định Khóa nhạc
-            let targetClef = settings.clef;
-            if (targetClef === 'mixed') {
-                targetClef = Math.random() > 0.5 ? 'treble' : 'bass';
+        // --- XỬ LÝ SỰ KIỆN NÚT BẤM CẤU HÌNH ---
+        function setupButtonGroups() {
+            const groups = ['level', 'clef', 'input'];
+            groups.forEach(group => {
+                const container = document.getElementById(`group-${group}`);
+                const buttons = container.querySelectorAll('.btn-option');
+                buttons.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        buttons.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        
+                        const val = btn.getAttribute('data-val');
+                        if(group === 'level') config.level = val;
+                        if(group === 'clef') config.clef = val;
+                        if(group === 'input') config.inputType = val;
+                        
+                        if(group === 'level' && val === 'easy' && config.clef !== 'treble') {
+                            document.querySelector('#group-clef button[data-val="treble"]').click();
+                        }
+                        
+                        updateInputUI();
+                        generateQuestion();
+                    });
+                });
+            });
+        }
+
+        function updateInputUI() {
+            document.getElementById('input-buttons').classList.add('hidden', 'flex');
+            document.getElementById('input-buttons').classList.remove('flex');
+            document.getElementById('input-piano').classList.add('hidden');
+            document.getElementById('input-guitar').classList.add('hidden');
+
+            if (config.inputType === 'buttons') {
+                document.getElementById('input-buttons').classList.remove('hidden');
+                document.getElementById('input-buttons').classList.add('flex');
+            } else if (config.inputType === 'piano') {
+                document.getElementById('input-piano').classList.remove('hidden');
+            } else if (config.inputType === 'guitar') {
+                document.getElementById('input-guitar').classList.remove('hidden');
             }
+        }
 
-            // Xác định Hóa biểu (Key Signature)
-            let keySig = 'C';
-            if (settings.difficulty === 'hard') {
-                keySig = getRandomItem(KEY_SIGNATURES);
-            }
+        // --- SINH GIAO DIỆN TƯƠNG TÁC ---
+        function initButtons() {
+            const container = document.getElementById('input-buttons');
+            container.innerHTML = '';
+            noteNames.forEach(note => {
+                const btn = document.createElement('button');
+                btn.className = 'w-16 h-16 rounded-full bg-white border-2 border-gray-300 text-xl font-bold text-gray-700 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 shadow-sm transition active:scale-95';
+                btn.innerText = note;
+                btn.onclick = () => checkAnswer(note); 
+                container.appendChild(btn);
+            });
+        }
 
-            // Lấy nốt từ Pool
-            const pool = NOTE_POOLS[targetClef][settings.difficulty];
-            const vexKey = getRandomItem(pool);
-            const baseNote = vexKey[0]; // Ký tự đầu: c, d, e...
+        function initPiano() {
+            const wrapper = document.getElementById('piano-wrapper');
+            wrapper.innerHTML = '';
+            const octaves = [3, 4, 5];
+            const keys = [
+                {note: 'C', type: 'w'}, {note: 'C#', type: 'b'}, {note: 'D', type: 'w'}, {note: 'D#', type: 'b'},
+                {note: 'E', type: 'w'}, {note: 'F', type: 'w'}, {note: 'F#', type: 'b'}, {note: 'G', type: 'w'},
+                {note: 'G#', type: 'b'}, {note: 'A', type: 'w'}, {note: 'A#', type: 'b'}, {note: 'B', type: 'w'}
+            ];
 
-            // Sinh dấu hóa bất thường (Accidental)
-            let explicitAccidental = null;
-            if (settings.difficulty !== 'easy') {
-                // 40% có dấu hóa bất thường
-                if (Math.random() < 0.4) {
-                    const accList = ['#', 'b', 'n'];
-                    const randomAcc = getRandomItem(accList);
+            octaves.forEach(octave => {
+                keys.forEach(k => {
+                    const keyDiv = document.createElement('div');
+                    const fullNote = k.note + octave;
+                    const midiNum = Tone.Frequency(fullNote).toMidi();
                     
-                    // Kiểm tra xem dấu hóa ngẫu nhiên này có bị trùng với mặc định của hóa biểu không.
-                    // Nếu trùng, ta không cần gắn explicitAccidental (để VexFlow vẽ sạch sẽ, người dùng tự nhớ hóa biểu).
-                    const defaultAccForKeySig = KEY_SIG_ACCIDENTALS[keySig][baseNote] || 'n';
-                    if (randomAcc !== defaultAccForKeySig) {
-                        explicitAccidental = randomAcc;
+                    if (k.type === 'w') {
+                        keyDiv.className = 'key-white';
+                        keyDiv.innerHTML = `<span>${k.note}</span>`;
+                    } else {
+                        keyDiv.className = 'key-black';
                     }
+                    
+                    keyDiv.dataset.midi = midiNum;
+                    keyDiv.addEventListener('mousedown', () => checkAnswerByMidi(midiNum));
+                    
+                    wrapper.appendChild(keyDiv);
+                });
+            });
+            setTimeout(() => { document.querySelector('.piano-container').scrollLeft = 150; }, 100);
+        }
+
+        function initGuitar() {
+            const fb = document.getElementById('fretboard');
+            fb.innerHTML = '';
+            
+            // Xếp đúng chiều: Dây 1 (mỏng nhất) ở trên, dây 6 (bass) ở dưới cùng
+            const strings = [
+                { num: 1, rootMidi: 64, name: 'E4', thickness: 1 },
+                { num: 2, rootMidi: 59, name: 'B3', thickness: 1.5 },
+                { num: 3, rootMidi: 55, name: 'G3', thickness: 2.5 },
+                { num: 4, rootMidi: 50, name: 'D3', thickness: 3.5 },
+                { num: 5, rootMidi: 45, name: 'A2', thickness: 4.5 },
+                { num: 6, rootMidi: 40, name: 'E2', thickness: 5.5 }
+            ];
+            
+            const numFrets = 15;
+
+            strings.forEach((str, strIndex) => {
+                const row = document.createElement('div');
+                row.className = 'guitar-string-row';
+                
+                const stringLine = document.createElement('style');
+                stringLine.innerHTML = `#fretboard .guitar-string-row:nth-child(${strIndex+1})::before { height: ${str.thickness}px; }`;
+                document.head.appendChild(stringLine);
+
+                for (let fret = 0; fret <= numFrets; fret++) {
+                    const fretDiv = document.createElement('div');
+                    fretDiv.className = 'fret';
+                    
+                    const midiNote = str.rootMidi + fret;
+                    fretDiv.dataset.midi = midiNote;
+                    
+                    if (fret === 0) {
+                        fretDiv.innerHTML = `<span class="text-xs font-bold text-gray-500 absolute -left-6">${str.num}</span>`;
+                    }
+                    
+                    if (str.num === 3 && [3, 5, 7, 9, 12, 15].includes(fret)) {
+                        const marker = document.createElement('div');
+                        marker.className = 'fret-marker';
+                        fretDiv.appendChild(marker);
+                        if(fret === 12) { 
+                            marker.style.top = '10px';
+                            const marker2 = document.createElement('div');
+                            marker2.className = 'fret-marker';
+                            marker2.style.top = '40px';
+                            fretDiv.appendChild(marker2);
+                        }
+                    }
+                    
+                    // Hiển thị số ngăn phím ở dưới dây số 6
+                    if (str.num === 6 && [3, 5, 7, 9, 12, 15].includes(fret)) {
+                        const label = document.createElement('div');
+                        label.className = 'fret-number-label';
+                        label.innerText = fret;
+                        fretDiv.appendChild(label);
+                    }
+
+                    fretDiv.addEventListener('mousedown', () => checkAnswerByMidi(midiNote));
+                    row.appendChild(fretDiv);
+                }
+                fb.appendChild(row);
+            });
+        }
+
+
+        // --- LOGIC PHÁT SINH NỐT NHẠC ---
+        function generateNote() {
+            let clef = config.clef;
+            if (clef === 'mixed') {
+                clef = Math.random() > 0.5 ? 'treble' : 'bass';
+            }
+
+            const baseNote = noteNames[Math.floor(Math.random() * noteNames.length)];
+            let octave, acc = '';
+
+            if (config.level === 'easy') {
+                octave = (clef === 'treble') ? 4 + Math.floor(Math.random() * 2) : 2 + Math.floor(Math.random() * 2);
+                if (clef === 'treble' && baseNote === 'A' && octave === 5) octave = 4;
+            } else {
+                octave = (clef === 'treble') ? 3 + Math.floor(Math.random() * 3) : 2 + Math.floor(Math.random() * 3);
+                
+                if (config.level === 'hard') {
+                    if (Math.random() > 0.5) acc = accidentals[Math.floor(Math.random() * 3)];
                 }
             }
 
-            // --- Xác định Đáp Án Đúng ---
-            // Nếu có dấu hóa bất thường, đó chính là đáp án dấu hóa.
-            // Nếu không có, đáp án dấu hóa phụ thuộc vào Hóa biểu.
-            let expectedAcc = explicitAccidental;
-            if (!expectedAcc) {
-                expectedAcc = KEY_SIG_ACCIDENTALS[keySig][baseNote] || 'n';
-            }
+            let vexAcc = acc === 'b' ? 'b' : acc === '#' ? '#' : '';
+            let noteString = baseNote + vexAcc + octave; 
+            let midiVal = Tone.Frequency(noteString).toMidi();
 
-            questionData = {
-                clef: targetClef,
-                keySig: keySig,
-                vexKey: vexKey,
-                baseNote: baseNote,
-                explicitAccidental: explicitAccidental,
-                expectedAcc: expectedAcc
+            return {
+                base: baseNote,
+                acc: acc,
+                octave: octave,
+                clef: clef,
+                vexNote: `${baseNote.toLowerCase()}/${octave}`,
+                vexAcc: vexAcc,
+                midi: midiVal,
+                fullName: noteString
             };
-
-            // Reset UI nhập liệu về "Bình"
-            setAccidental('n');
-            
-            const aiContainer = document.getElementById('ai-response-container');
-            if(aiContainer) aiContainer.classList.add('hidden');
-            const aiText = document.getElementById('ai-text');
-            if(aiText) aiText.innerText = '';
-            const btnAi = document.getElementById('btn-ai');
-            if(btnAi) btnAi.disabled = false;
-
-            drawStaff(questionData);
         }
 
-        // Vẽ bằng VexFlow
-        function drawStaff(data) {
-            const container = document.getElementById("staff-container");
-            container.innerHTML = ""; 
-
-            // Cấu hình kích thước để đủ không gian cho hóa biểu
-            const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
-            renderer.resize(320, 160);
-            const context = renderer.getContext();
-            context.setFont("Arial", 10, "").setBackgroundFillStyle("#eed");
-
-            // Căn chỉnh Stave
-            const stave = new VF.Stave(10, 30, 300);
-            stave.addClef(data.clef);
+        function drawStaff(noteObj) {
+            const container = document.getElementById('staff-container');
+            container.innerHTML = '';
             
-            if (data.keySig !== 'C') {
-                stave.addKeySignature(data.keySig);
+            document.getElementById('ai-response').classList.add('hidden');
+
+            const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
+            renderer.resize(250, 150);
+            const context = renderer.getContext();
+
+            const stave = new VF.Stave(10, 20, 200);
+            stave.addClef(noteObj.clef);
+            
+            let keySig = "C";
+            if (config.level === 'hard') {
+                 const keys = ["G", "F", "D", "Bb", "Eb"];
+                 if (Math.random() > 0.5) {
+                     keySig = keys[Math.floor(Math.random() * keys.length)];
+                     stave.addKeySignature(keySig);
+                 }
             }
+            noteObj.currentKeySig = keySig; 
             
             stave.setContext(context).draw();
 
-            const note = new VF.StaveNote({ 
-                clef: data.clef, 
-                keys: [data.vexKey], 
+            const staveNote = new VF.StaveNote({ 
+                clef: noteObj.clef, 
+                keys: [noteObj.vexNote], 
                 duration: "w" 
             });
 
-            // Gắn dấu hóa bất thường nếu có
-            if (data.explicitAccidental) {
-                note.addAccidental(0, new VF.Accidental(data.explicitAccidental));
+            if (noteObj.vexAcc) {
+                staveNote.addModifier(new VF.Accidental(noteObj.vexAcc));
             }
 
-            const voice = new VF.Voice({ num_beats: 4, beat_value: 4 });
-            voice.addTickables([note]);
-
-            // Dùng Formatter để căn chỉnh khoảng cách dựa trên hóa biểu
-            const formatter = new VF.Formatter().joinVoices([voice]).format([voice], 200);
-            voice.draw(context, stave);
+            VF.Formatter.FormatAndDraw(context, stave, [staveNote]);
         }
 
-        // --- TÍCH HỢP GEMINI AI ---
+        function generateQuestion() {
+            currentNote = generateNote();
+            drawStaff(currentNote);
+        }
+
+        // --- XỬ LÝ ĐÁP ÁN ---
+        function triggerFeedback(isCorrect) {
+            const msg = document.getElementById('feedback-msg');
+            const playArea = document.getElementById('play-area');
+            
+            if (isCorrect) {
+                msg.innerText = "Chính xác!";
+                msg.className = "absolute top-2 left-1/2 transform -translate-x-1/2 text-lg font-bold px-4 py-1 rounded-full bg-green-100 text-green-700 transition-opacity opacity-100 z-10 shadow";
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                playNoteSound(currentNote.midi); 
+            } else {
+                msg.innerText = `Sai! Nốt đúng là: ${currentNote.base}${currentNote.acc}`;
+                msg.className = "absolute top-2 left-1/2 transform -translate-x-1/2 text-lg font-bold px-4 py-1 rounded-full bg-red-100 text-red-700 transition-opacity opacity-100 z-10 shadow";
+                playArea.classList.add('shake');
+                setTimeout(() => playArea.classList.remove('shake'), 400);
+            }
+
+            setTimeout(() => { msg.classList.remove('opacity-100'); msg.classList.add('opacity-0'); }, 1500);
+        }
+
+        function checkAnswer(selectedBase) {
+            if (!currentNote) return;
+            if (selectedBase === currentNote.base) {
+                score.correct++;
+                document.getElementById('score-correct').innerText = score.correct;
+                triggerFeedback(true);
+                setTimeout(generateQuestion, 800);
+            } else {
+                score.wrong++;
+                document.getElementById('score-wrong').innerText = score.wrong;
+                triggerFeedback(false);
+            }
+        }
+
+        function checkAnswerByMidi(selectedMidi) {
+            if (!currentNote) return;
+            
+            playNoteSound(selectedMidi);
+
+            if (selectedMidi === currentNote.midi) {
+                score.correct++;
+                document.getElementById('score-correct').innerText = score.correct;
+                triggerFeedback(true);
+                setTimeout(generateQuestion, 1000);
+            } else {
+                score.wrong++;
+                document.getElementById('score-wrong').innerText = score.wrong;
+                triggerFeedback(false);
+            }
+        }
+
+        // --- TÍNH NĂNG AI ---
         async function explainWithAI() {
-            if (!questionData || isProcessing) return;
-            
-            const btn = document.getElementById('btn-ai');
-            const container = document.getElementById('ai-response-container');
-            const loading = document.getElementById('ai-loading');
-            const aiText = document.getElementById('ai-text');
-            
-            btn.disabled = true;
-            container.classList.remove('hidden');
-            loading.classList.remove('hidden');
-            aiText.innerText = '';
-            
-            // Xây dựng ngữ cảnh chuyên môn cho Prompt
-            const clefName = questionData.clef === 'treble' ? 'Khóa Sol' : 'Khóa Fa';
-            const noteParts = questionData.vexKey.split('/');
-            const base = NOTE_NAMES_VI[noteParts[0]];
-            const octave = noteParts[1];
-            const accName = questionData.expectedAcc !== 'n' ? ACC_NAMES_VI[questionData.expectedAcc] : 'Bình';
-            
-            let keySigContext = `Hóa biểu là ${questionData.keySig}.`;
-            if(questionData.keySig === 'C') keySigContext = "Không có hóa biểu (tức là giọng Đô trưởng hoặc La thứ).";
-            
-            let explicitAccContext = questionData.explicitAccidental ? `Đặc biệt, nốt này có đặt một dấu hóa bất thường là dấu ${ACC_NAMES_VI[questionData.explicitAccidental]} ở ngay đằng trước nó trên khuông nhạc.` : "";
-            
-            const prompt = `Đóng vai một giáo viên âm nhạc nhiệt tình và giàu kinh nghiệm. Hãy giải thích ngắn gọn cho học viên cách đọc nốt nhạc hiện tại.
-Thông tin kỹ thuật của nốt đang hiển thị:
-- Khóa nhạc: ${clefName}
-- ${keySigContext}
-- ${explicitAccContext}
-- Vị trí cơ bản: nốt ${base} ở quãng 8 thứ ${octave}.
-- Kết quả chính xác nốt này đọc là: ${base} ${accName}.
+            if (!currentNote) return;
+            const apiKey = prompt("Nhập Gemini API Key (tạo miễn phí tại aistudio.google.com):");
+            if (!apiKey) return;
 
-Yêu cầu: Viết 1 đoạn văn (khoảng 2-3 câu) hướng dẫn học viên nhìn nhận vị trí nốt trên ${clefName}, giải thích logic vì sao lại đọc là "${base} ${accName}". Hãy nhấn mạnh vào sự ảnh hưởng của hóa biểu hoặc dấu hóa bất thường (nếu có). Xưng hô "thầy/cô" và "bạn/em". KHÔNG dùng định dạng markdown (như * hay #) để văn bản hiển thị mượt mà.`;
+            const responseBox = document.getElementById('ai-response');
+            responseBox.innerText = "Đang phân tích...";
+            responseBox.classList.remove('hidden');
 
-            // Canvas tự động cung cấp API Key khi biến apiKey rỗng
-            const apiKey = ""; 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-            
+            const promptText = `Hãy đóng vai giáo viên âm nhạc, giải thích cho người lớn tại sao nốt nhạc hiện tại lại đọc là ${currentNote.fullName}. 
+            Bối cảnh bản nhạc: Khóa ${currentNote.clef === 'treble' ? 'Sol' : 'Fa'}, Hóa biểu là ${currentNote.currentKeySig}, nốt nằm ở dòng/khe tương ứng với ${currentNote.base}. 
+            Viết ngắn gọn 2 câu tiếng Việt dễ hiểu nhất.`;
+
             try {
-                const response = await fetch(apiUrl, {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        systemInstruction: { parts: [{ text: "Bạn là giáo viên dạy nhạc tài năng, sư phạm tốt, luôn đưa ra hướng dẫn logic, chính xác và dễ hiểu."}] }
-                    })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
                 });
                 
                 const data = await response.json();
-                if (data.candidates && data.candidates.length > 0) {
-                    aiText.innerText = data.candidates[0].content.parts[0].text;
-                } else {
-                    aiText.innerText = "Xin lỗi, AI của thầy cô đang bận một chút, em thử lại sau nhé.";
-                }
+                responseBox.innerText = data.candidates[0].content.parts[0].text;
             } catch (error) {
-                console.error("Lỗi AI:", error);
-                aiText.innerText = "Đã có lỗi kết nối, em hãy kiểm tra lại kết nối mạng nhé.";
-            } finally {
-                loading.classList.add('hidden');
-                btn.disabled = false;
+                responseBox.innerText = "Lỗi kết nối API. Vui lòng kiểm tra lại Key.";
             }
         }
 
-        // Xử lý nộp câu trả lời
-        function submitAnswer(selectedBaseNote) {
-            if (isProcessing || !questionData) return;
-            isProcessing = true;
-
-            const isBaseNoteCorrect = (selectedBaseNote === questionData.baseNote);
-            const isAccCorrect = (currentInputAcc === questionData.expectedAcc);
-
-            const feedbackEl = document.getElementById("feedback-message");
-            const container = document.getElementById('staff-container');
-
-            if (isBaseNoteCorrect && isAccCorrect) {
-                // TRẢ LỜI ĐÚNG
-                score.correct++;
-                document.getElementById('score-correct').innerText = score.correct;
-                
-                // --- PHÁT ÂM THANH PIANO ---
-                if (audioInitialized && sampler.loaded) {
-                    // Chuyển đổi dữ liệu nốt thành định dạng cao độ của Tone.js (VD: "C#4", "Bb3")
-                    const noteStr = questionData.baseNote.toUpperCase();
-                    const accStr = questionData.expectedAcc === 'n' ? '' : questionData.expectedAcc;
-                    const octaveStr = questionData.vexKey.split('/')[1];
-                    const tonePitch = `${noteStr}${accStr}${octaveStr}`;
-                    
-                    // Đánh nốt nhạc
-                    sampler.triggerAttackRelease(tonePitch, "2n");
-                }
-                
-                feedbackEl.innerText = "Chính xác! 🎉";
-                feedbackEl.className = "absolute top-4 font-bold text-xl text-emerald-600 transition-opacity duration-300 opacity-100 z-20";
-                
-                confetti({
-                    particleCount: 80,
-                    spread: 60,
-                    origin: { y: 0.5 },
-                    colors: ['#10b981', '#3b82f6', '#f59e0b'] // emerald, blue, amber
-                });
-
-                setTimeout(() => {
-                    feedbackEl.classList.replace("opacity-100", "opacity-0");
-                    generateQuestion();
-                    isProcessing = false;
-                }, 1000);
-
+        // --- XỬ LÝ THIẾT BỊ NGOẠI VI (WEB MIDI API) ---
+        function initMIDI() {
+            if (navigator.requestMIDIAccess) {
+                navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
             } else {
-                // TRẢ LỜI SAI
-                score.wrong++;
-                document.getElementById('score-wrong').innerText = score.wrong;
-                
-                // Ghép tên đáp án chuẩn
-                const correctNoteName = NOTE_NAMES_VI[questionData.baseNote];
-                const correctAccName = ACC_NAMES_VI[questionData.expectedAcc];
-                const fullAnswerString = `${correctNoteName} ${correctAccName}`.trim();
-                
-                feedbackEl.innerText = `Sai rồi. Đáp án: ${fullAnswerString}`;
-                feedbackEl.className = "absolute top-4 font-bold text-lg text-rose-600 transition-opacity duration-300 opacity-100 z-20";
-
-                // CSS Animation Rung lắc
-                container.classList.add("shake");
-
-                setTimeout(() => {
-                    container.classList.remove("shake");
-                }, 400);
-
-                setTimeout(() => {
-                    feedbackEl.classList.replace("opacity-100", "opacity-0");
-                    generateQuestion();
-                    isProcessing = false;
-                }, 2000); // Đợi lâu hơn xíu để người dùng kịp đọc đáp án
+                updateMIDIStatus("Trình duyệt không hỗ trợ Web MIDI", "text-red-600 bg-red-50 border-red-200");
             }
         }
 
-        // Init
-        window.onload = () => {
-            updateSettings();
-        };
+        function onMIDISuccess(midiAccess) {
+            const inputs = midiAccess.inputs;
 
+            if (inputs.size === 0) {
+                updateMIDIStatus("Chưa cắm đàn/thiết bị MIDI", "text-gray-500 bg-gray-50 border-gray-200");
+            }
+
+            // Duyệt qua tất cả các cổng MIDI đang cắm
+            inputs.forEach((input) => {
+                input.onmidimessage = handleMIDIMessage;
+                updateMIDIStatus(`🎹 Đã kết nối: ${input.name}`, "text-green-600 bg-green-50 border-green-200");
+            });
+
+            // Lắng nghe sự kiện nếu người dùng cắm/rút cáp USB trong lúc đang mở web
+            midiAccess.onstatechange = (e) => {
+                if (e.port.type === "input") {
+                    if (e.port.state === "connected") {
+                        e.port.onmidimessage = handleMIDIMessage;
+                        updateMIDIStatus(`🎹 Đã kết nối: ${e.port.name}`, "text-green-600 bg-green-50 border-green-200");
+                    } else {
+                        updateMIDIStatus("Đã ngắt kết nối đàn MIDI", "text-red-600 bg-red-50 border-red-200");
+                    }
+                }
+            };
+        }
+
+        function onMIDIFailure() {
+            updateMIDIStatus("Bị từ chối quyền truy cập MIDI", "text-red-600 bg-red-50 border-red-200");
+        }
+
+        function handleMIDIMessage(message) {
+            // message.data là mảng 3 byte: [Lệnh, Cao độ (Nốt), Lực gõ (Velocity)]
+            const command = message.data[0];
+            const note = message.data[1];
+            const velocity = (message.data.length > 2) ? message.data[2] : 0;
+
+            // Command 144 -> 159 là Note On (tương ứng với 16 kênh MIDI).
+            // Nếu Velocity > 0 tức là phím được ấn xuống (nếu = 0 là buông phím ra)
+            if (command >= 144 && command <= 159 && velocity > 0) {
+                // Tự động kích hoạt check đáp án bằng MIDI Number
+                checkAnswerByMidi(note);
+                
+                // (Hiệu ứng) Làm phím ảo trên web cũng lún xuống theo khi đánh đàn thật
+                highlightVirtualKey(note);
+            }
+        }
+
+        function updateMIDIStatus(text, colorClasses) {
+            const statusEl = document.getElementById('midi-status');
+            if (statusEl) {
+                statusEl.innerText = text;
+                statusEl.className = `mt-2 text-xs font-bold px-2 py-1 rounded border inline-block ${colorClasses}`;
+            }
+        }
+
+        // Hàm phụ: Đánh đàn thật thì đàn trên web cũng sáng lên
+        function highlightVirtualKey(midiNum) {
+            const key = document.querySelector(`.piano-container [data-midi="${midiNum}"]`);
+            if (key) {
+                // Lưu background cũ để trả lại
+                const isBlack = key.classList.contains('key-black');
+                const originalBg = isBlack ? '#222' : 'white';
+                
+                key.style.background = '#93c5fd'; // Màu xanh dương nhạt (blue-300)
+                key.style.transform = isBlack ? 'translateX(-14px) translateY(2px)' : 'translateY(2px)';
+                
+                setTimeout(() => {
+                    key.style.background = originalBg;
+                    key.style.transform = isBlack ? 'translateX(-14px)' : 'none';
+                }, 200);
+            }
+        }
+
+        // --- KHỞI TẠO ỨNG DỤNG ---
+        setupButtonGroups();
+        initButtons();
+        initPiano();
+        initGuitar();
+        initMIDI();
+        generateQuestion();
+        updateInputUI();
+        
     </script>
 </body>
 </html>

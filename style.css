@@ -1,0 +1,171 @@
+body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    background-color: #f3f4f6; 
+}
+
+#staff-container { 
+    display: flex; 
+    justify-content: center; 
+    background: white; 
+    border-radius: 12px; 
+    padding: 20px; 
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
+    overflow-x: auto;
+}
+
+/* Hiệu ứng rung khi sai */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px) rotate(-1deg); }
+    75% { transform: translateX(5px) rotate(1deg); }
+}
+.shake { animation: shake 0.4s ease-in-out; }
+
+/* Nút tùy chọn (Button Group) */
+.btn-option { transition: all 0.2s; }
+.btn-option.active { 
+    background-color: #3b82f6; 
+    color: white; 
+    border-color: #3b82f6; 
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3); 
+}
+
+/* --- PIANO CSS --- */
+.piano-container { 
+    display: flex; 
+    justify-content: center; 
+    position: relative; 
+    height: 160px; 
+    margin-top: 20px; 
+    overflow-x: auto; 
+    padding: 0 10px;
+}
+.key-white {
+    width: 45px; 
+    height: 150px; 
+    background: white; 
+    border: 1px solid #ccc;
+    border-radius: 0 0 5px 5px; 
+    box-shadow: 0 4px 2px rgba(0,0,0,0.1);
+    position: relative; 
+    cursor: pointer; 
+    flex-shrink: 0; 
+    z-index: 1; 
+    transition: background 0.1s;
+}
+.key-white:active, .key-white.active { 
+    background: #e0e0e0; 
+    transform: translateY(2px); 
+    box-shadow: 0 2px 2px rgba(0,0,0,0.1); 
+}
+.key-white span { 
+    position: absolute; 
+    bottom: 10px; 
+    width: 100%; 
+    text-align: center; 
+    font-size: 12px; 
+    color: #666; 
+    font-weight: bold;
+}
+
+.key-black {
+    width: 28px; 
+    height: 90px; 
+    background: #222; 
+    border-radius: 0 0 4px 4px;
+    position: absolute; 
+    cursor: pointer; 
+    z-index: 2; 
+    box-shadow: 0 3px 2px rgba(0,0,0,0.3);
+    transform: translateX(-14px); 
+    transition: background 0.1s;
+}
+.key-black:active, .key-black.active { 
+    background: #444; 
+    transform: translateX(-14px) translateY(2px); 
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3); 
+}
+.piano-wrapper { display: flex; position: relative; }
+
+/* --- GUITAR 3D CSS (Góc nhìn người chơi) --- */
+.guitar-scene {
+    perspective: 800px; /* Tạo chiều sâu */
+    margin-top: 30px;
+    padding: 20px 0 40px 0;
+    overflow-x: auto;
+    display: flex;
+    justify-content: flex-start;
+}
+.fretboard {
+    /* Lật mặt cần đàn ngược lên (rotateX âm) để mặt chứa dây bass gần mắt nhất */
+    transform: rotateX(50deg) rotateY(-10deg) rotateZ(15deg); 
+    transform-style: preserve-3d;
+    display: flex;
+    flex-direction: column;
+    background: #3e2723; /* Màu gỗ nâu đậm */
+    border-radius: 4px;
+    box-shadow: 0 15px 25px rgba(0,0,0,0.5);
+    padding: 5px 0;
+    width: max-content;
+    margin: 0 auto;
+}
+.guitar-string-row {
+    display: flex;
+    position: relative;
+    align-items: center;
+    height: 25px; /* Khoảng cách giữa các dây */
+}
+/* Đường dây đàn giả lập vắt ngang */
+.guitar-string-row::before {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    background: linear-gradient(to bottom, #f5f5f5, #999, #f5f5f5);
+    box-shadow: 0 2px 3px rgba(0,0,0,0.4);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.fret {
+    width: 60px;
+    height: 100%;
+    border-right: 3px solid #b0bec5; /* Phím đàn (Fret wire) */
+    position: relative;
+    z-index: 2;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.fret:first-child { border-left: 10px solid #eceff1; width: 40px; } /* Lược đàn (Nut) */
+
+/* Hiệu ứng khi bấm phím guitar */
+.fret:hover { background: rgba(255, 255, 255, 0.15); }
+.fret:active { background: rgba(255, 255, 255, 0.3); }
+
+/* Chấm tròn đánh dấu ngăn phím (Inlays) */
+.fret-marker {
+    position: absolute;
+    width: 14px; height: 14px;
+    background: #e0e0e0;
+    border-radius: 50%;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 0;
+    pointer-events: none;
+}
+.fret-number-label {
+    position: absolute;
+    bottom: -25px;
+    width: 100%;
+    text-align: center;
+    color: #555;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Tùy chỉnh thanh cuộn */
+::-webkit-scrollbar { height: 8px; }
+::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }

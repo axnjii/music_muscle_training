@@ -1,10 +1,11 @@
-const CACHE_NAME = 'docnotnhac-cache-v4';
+const CACHE_NAME = 'docnotnhac-cache-v6';
 
 // Danh sách các file cần lưu offline ngay lập tức
 const urlsToCache = [
   './',
   './index.html',
   './style.css',
+  './apple-touch-icon.png',
   
   // --- ÂM THANH PIANO ---
   'https://tonejs.github.io/audio/salamander/C4.mp3',

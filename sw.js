@@ -1,31 +1,44 @@
-const CACHE_NAME = 'docnotnhac-cache-v2'; // Đổi tên để trình duyệt biết có bản mới
+const CACHE_NAME = 'docnotnhac-cache-v3';
 
+// Danh sách các file cần lưu offline ngay lập tức
 const urlsToCache = [
   './',
-  './index.html'
+  './index.html',
+  './style.css',
+  
+  // --- ÂM THANH PIANO ---
+  'https://tonejs.github.io/audio/salamander/C4.mp3',
+  'https://tonejs.github.io/audio/salamander/Ds4.mp3',
+  'https://tonejs.github.io/audio/salamander/Fs4.mp3',
+  'https://tonejs.github.io/audio/salamander/A4.mp3',
+
+  // --- ÂM THANH GUITAR ---
+  'https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_guitar_nylon-mp3/A2.mp3',
+  'https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_guitar_nylon-mp3/C3.mp3',
+  'https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_guitar_nylon-mp3/E3.mp3',
+  'https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_guitar_nylon-mp3/A3.mp3',
+  'https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_guitar_nylon-mp3/C4.mp3',
+  'https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_guitar_nylon-mp3/E4.mp3',
+  'https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_guitar_nylon-mp3/A4.mp3',
+  'https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_guitar_nylon-mp3/C5.mp3'
 ];
 
-// 1. Cài đặt Service Worker và lưu bộ nhớ đệm ban đầu
 self.addEventListener('install', event => {
-  // Yêu cầu Service Worker mới kích hoạt ngay lập tức mà không cần chờ tab đóng
   self.skipWaiting(); 
-  
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Đã mở cache bản mới:', CACHE_NAME);
+        console.log('Đã mở cache bản mới và đang tải sẵn âm thanh:', CACHE_NAME);
         return cache.addAll(urlsToCache);
       })
   );
 });
 
-// 2. MÃ DỌN DẸP CACHE CŨ (Sự kiện Activate)
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          // Nếu tên cache đang kiểm tra khác với CACHE_NAME hiện tại thì xóa đi
           if (cacheName !== CACHE_NAME) {
             console.log('Đã xóa cache cũ:', cacheName);
             return caches.delete(cacheName);
@@ -34,39 +47,35 @@ self.addEventListener('activate', event => {
       );
     })
   );
-  // Đảm bảo Service Worker mới kiểm soát trang ngay lập tức
   return self.clients.claim(); 
 });
 
-// 3. Xử lý khi có request mạng (Fetch)
 self.addEventListener('fetch', event => {
-  if (event.request.url.includes('generativelanguage.googleapis.com')) {
-      return;
-  }
+  if (event.request.url.includes('generativelanguage.googleapis.com')) return;
 
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        if (response) {
-          return response;
-        }
+        if (response) return response; // Có trong cache thì trả về ngay (Offline chạy ngon)
         
         return fetch(event.request).then(
           function(networkResponse) {
-            if(!networkResponse || networkResponse.status !== 200 || (networkResponse.type !== 'basic' && networkResponse.type !== 'cors')) {
+            // Nới lỏng kiểm tra: Nếu là file âm thanh (đuôi mp3) thì lưu hết không cần check strict CORS
+            const isAudio = event.request.url.endsWith('.mp3');
+            
+            if(!networkResponse || (networkResponse.status !== 200 && !isAudio && networkResponse.type !== 'opaque')) {
               return networkResponse;
             }
             
             var responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME)
-              .then(function(cache) {
+            caches.open(CACHE_NAME).then(function(cache) {
                 cache.put(event.request, responseToCache);
-              });
+            });
               
             return networkResponse;
           }
         ).catch(() => {
-            console.log('Đang offline và không tìm thấy file:', event.request.url);
+            console.log('Lỗi offline file:', event.request.url);
         });
       })
   );

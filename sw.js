@@ -1,4 +1,4 @@
-const CACHE_NAME = 'docnotnhac-cache-v3';
+const CACHE_NAME = 'docnotnhac-cache-v4';
 
 // Danh sách các file cần lưu offline ngay lập tức
 const urlsToCache = [

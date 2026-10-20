@@ -80,6 +80,31 @@
             </div>
         </div>
 
+        <!-- Metronome -->
+        <section class="bg-white p-5 rounded-xl shadow-sm mb-6" aria-labelledby="metronome-heading">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div>
+                    <h2 id="metronome-heading" class="text-sm font-bold text-gray-700 uppercase">Metronome</h2>
+                    <p id="metronome-status" class="text-xs text-gray-500 mt-1" aria-live="polite">Đang tắt</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span id="metronome-beat" class="metronome-beat" aria-hidden="true">—</span>
+                    <button id="metronome-toggle" type="button" aria-pressed="false" class="metronome-toggle">
+                        <i class="fas fa-play mr-2" aria-hidden="true"></i>Bật metronome
+                    </button>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <span class="text-sm font-medium text-gray-600">Tempo</span>
+                <button type="button" class="bpm-step" data-bpm-change="-5" aria-label="Giảm 5 BPM">−5</button>
+                <button type="button" class="bpm-step" data-bpm-change="-1" aria-label="Giảm 1 BPM">−</button>
+                <input id="metronome-slider" class="metronome-slider" type="range" min="40" max="240" step="1" value="100" aria-label="Chọn tempo từ 40 đến 240 BPM">
+                <button type="button" class="bpm-step" data-bpm-change="1" aria-label="Tăng 1 BPM">+</button>
+                <button type="button" class="bpm-step" data-bpm-change="5" aria-label="Tăng 5 BPM">+5</button>
+                <output id="metronome-bpm" class="metronome-bpm" for="metronome-slider">100 BPM</output>
+            </div>
+        </section>
+
         <!-- Khu vực hiển thị Khuông nhạc -->
         <div id="play-area" class="relative">
             <div id="staff-container" class="mb-6"></div>
@@ -142,6 +167,11 @@
         let pianoSampler = null;
         let guitarSampler = null;
         let audioStarted = false;
+        let metronomeAudioContext = null;
+        let metronomeTimer = null;
+        let nextMetronomeBeat = 0;
+        let metronomeBeatCount = 0;
+        let metronomeBpm = 100;
         
         let config = {
             level: 'easy',     
@@ -151,6 +181,101 @@
 
         const noteNames = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
         const accidentals = ['b', '', '#'];
+
+        function updateMetronomeBpm(value) {
+            metronomeBpm = Math.max(40, Math.min(240, Number(value)));
+            document.getElementById('metronome-slider').value = metronomeBpm;
+            document.getElementById('metronome-bpm').textContent = `${metronomeBpm} BPM`;
+            if (metronomeTimer && metronomeAudioContext) {
+                nextMetronomeBeat = metronomeAudioContext.currentTime;
+            }
+        }
+
+        function scheduleMetronomeBeats() {
+            const context = metronomeAudioContext;
+            if (!context) return;
+
+            while (nextMetronomeBeat < context.currentTime + 0.1) {
+                const beatTime = nextMetronomeBeat;
+                const isDownbeat = metronomeBeatCount % 4 === 0;
+                const oscillator = context.createOscillator();
+                const gain = context.createGain();
+                oscillator.frequency.value = isDownbeat ? 1200 : 800;
+                gain.gain.setValueAtTime(0.0001, beatTime);
+                gain.gain.exponentialRampToValueAtTime(0.2, beatTime + 0.005);
+                gain.gain.exponentialRampToValueAtTime(0.0001, beatTime + 0.08);
+                oscillator.connect(gain);
+                gain.connect(context.destination);
+                oscillator.start(beatTime);
+                oscillator.stop(beatTime + 0.085);
+
+                const beatNumber = metronomeBeatCount % 4 + 1;
+                setTimeout(() => {
+                    if (!metronomeTimer) return;
+                    document.getElementById('metronome-beat').textContent = `${beatNumber}/4`;
+                    document.getElementById('metronome-status').textContent = `Đang chạy · Nhịp ${beatNumber}/4 · ${metronomeBpm} BPM`;
+                }, Math.max(0, (beatTime - context.currentTime) * 1000));
+
+                metronomeBeatCount++;
+                nextMetronomeBeat += 60 / metronomeBpm;
+            }
+        }
+
+        async function toggleMetronome() {
+            const status = document.getElementById('metronome-status');
+            const button = document.getElementById('metronome-toggle');
+
+            if (metronomeTimer) {
+                clearInterval(metronomeTimer);
+                metronomeTimer = null;
+                button.innerHTML = '<i class="fas fa-play mr-2" aria-hidden="true"></i>Bật metronome';
+                button.setAttribute('aria-pressed', 'false');
+                status.textContent = 'Đang tắt';
+                document.getElementById('metronome-beat').textContent = '—';
+                return;
+            }
+
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) {
+                status.textContent = 'Trình duyệt không hỗ trợ phát âm thanh metronome.';
+                return;
+            }
+
+            try {
+                if (!metronomeAudioContext) metronomeAudioContext = new AudioContextClass();
+                await metronomeAudioContext.resume();
+            } catch (error) {
+                status.textContent = 'Không thể khởi động âm thanh metronome.';
+                console.error('Không thể khởi động metronome:', error);
+                return;
+            }
+
+            metronomeBeatCount = 0;
+            nextMetronomeBeat = metronomeAudioContext.currentTime;
+            scheduleMetronomeBeats();
+            metronomeTimer = setInterval(scheduleMetronomeBeats, 25);
+            button.innerHTML = '<i class="fas fa-stop mr-2" aria-hidden="true"></i>Tắt metronome';
+            button.setAttribute('aria-pressed', 'true');
+            status.textContent = `Đang chạy · Nhịp 1/4 · ${metronomeBpm} BPM`;
+        }
+
+        function setupMetronome() {
+            document.getElementById('metronome-toggle').addEventListener('click', toggleMetronome);
+            document.getElementById('metronome-slider').addEventListener('input', (event) => {
+                updateMetronomeBpm(event.target.value);
+                if (metronomeTimer) {
+                    document.getElementById('metronome-status').textContent = `Đang chạy · ${metronomeBpm} BPM`;
+                }
+            });
+            document.querySelectorAll('[data-bpm-change]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    updateMetronomeBpm(metronomeBpm + Number(button.dataset.bpmChange));
+                    if (metronomeTimer) {
+                        document.getElementById('metronome-status').textContent = `Đang chạy · ${metronomeBpm} BPM`;
+                    }
+                });
+            });
+        }
 
      // --- KHỞI TẠO ÂM THANH (TONE.JS) ---
 
@@ -610,6 +735,7 @@
 
         // --- KHỞI TẠO ỨNG DỤNG ---
         setupButtonGroups();
+        setupMetronome();
         initButtons();
         initPiano();
         initGuitar();

@@ -169,3 +169,54 @@ body {
 ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
 ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+
+.metronome-toggle {
+    background: #2563eb;
+    color: white;
+    border: 0;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+.metronome-toggle:hover { background: #1d4ed8; }
+.metronome-toggle[aria-pressed="true"] { background: #dc2626; }
+.metronome-toggle[aria-pressed="true"]:hover { background: #b91c1c; }
+.bpm-step {
+    min-width: 38px;
+    height: 36px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: white;
+    color: #374151;
+    font-weight: 600;
+}
+.bpm-step:hover { background: #f3f4f6; }
+.metronome-slider {
+    flex: 1 1 140px;
+    min-width: 120px;
+    accent-color: #2563eb;
+}
+.metronome-bpm {
+    min-width: 78px;
+    color: #1d4ed8;
+    font-size: 1.125rem;
+    font-weight: 700;
+    text-align: right;
+}
+.metronome-beat {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border-radius: 50%;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+@media (max-width: 480px) {
+    .metronome-slider { order: 1; flex-basis: 100%; }
+    .metronome-bpm { margin-left: auto; }
+}
